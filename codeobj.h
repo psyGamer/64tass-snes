@@ -33,7 +33,8 @@ typedef enum Code_types {
     D_BYTE = 1,
     D_WORD = 2,
     D_LONG = 3,
-    D_DWORD = 4
+    D_DWORD = 4,
+    D_CODE = 5,
 } Code_types;
 
 typedef struct Code {

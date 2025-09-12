@@ -31,7 +31,7 @@ typedef enum Output_types {
 
 typedef enum Symbollist_types {
     LABEL_64TASS, LABEL_VICE, LABEL_VICE_NUMERIC, LABEL_DUMP, LABEL_EXPORT,
-    LABEL_SIMPLE, LABEL_MESEN, LABEL_CTAGS, LABEL_DBG
+    LABEL_SIMPLE, LABEL_MESEN, LABEL_CTAGS, LABEL_CDL
 } Symbollist_types;
 
 typedef enum Caret_types {

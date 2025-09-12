@@ -369,7 +369,7 @@ enum {
     OUTPUT_APPEND, NO_OUTPUT, ERROR_APPEND, NO_ERROR, LABELS_APPEND, MAP,
     NO_MAP, MAP_APPEND, LIST_APPEND, SIMPLE_LABELS, LABELS_SECTION,
     MESEN_LABELS, LABELS_ADD_PREFIX, MAKE_APPEND, C256_PGX, C256_PGZ,
-    OUTPUT_EXEC, M45GS02, CTAGS_LABELS, CODY_BIN, WDC_BIN, DBG_LABELS
+    OUTPUT_EXEC, M45GS02, CTAGS_LABELS, CODY_BIN, WDC_BIN, CDL_LABELS
 };
 
 static const struct my_option long_options[] = {
@@ -432,7 +432,7 @@ static const struct my_option long_options[] = {
     {"simple-labels"    , my_no_argument      , NULL,  SIMPLE_LABELS},
     {"mesen-labels"     , my_no_argument      , NULL,  MESEN_LABELS},
     {"ctags-labels"     , my_no_argument      , NULL,  CTAGS_LABELS},
-    {"dbg-labels"       , my_no_argument      , NULL,  DBG_LABELS},
+    {"cdl-labels"       , my_no_argument      , NULL,  CDL_LABELS},
     {"labels-add-prefix", my_required_argument, NULL,  LABELS_ADD_PREFIX},
     {"labels-root"      , my_required_argument, NULL,  LABELS_ROOT},
     {"labels-section"   , my_required_argument, NULL,  LABELS_SECTION},
@@ -717,7 +717,7 @@ int init_arguments(int *argc2, char **argv2[]) {
             case SIMPLE_LABELS: symbol_output.mode = LABEL_SIMPLE; break;
             case MESEN_LABELS: symbol_output.mode = LABEL_MESEN; break;
             case CTAGS_LABELS: symbol_output.mode = LABEL_CTAGS; break;
-            case DBG_LABELS: symbol_output.mode = LABEL_DBG; break;
+            case CDL_LABELS: symbol_output.mode = LABEL_CDL; break;
             case LABELS_ROOT: get_arg(&get_args, &symbol_output.space_pos); break;
             case LABELS_SECTION: symbol_output.section = my_optarg; break;
             case LABELS_ADD_PREFIX: symbol_output.add_prefix = my_optarg; break;
@@ -761,7 +761,7 @@ int init_arguments(int *argc2, char **argv2[]) {
                "        [--labels=<file>] [--labels-append=<file>] [--labels-add-prefix=<txt>]\n"
                "        [--labels-section=<name>] [--labels-root=<expr>] [--export-labels]\n"
                "        [--vice-labels-numeric] [--vice-labels] [--dump-labels]\n"
-               "        [--simple-labels] [--mesen-labels] [--ctags-labels] [--dbg-labels] [--list=<file>]\n"
+               "        [--simple-labels] [--mesen-labels] [--ctags-labels] [--cdl-labels] [--list=<file>]\n"
                "        [--list-append=<file>] [--no-monitor] [--no-source] [--line-numbers]\n"
                "        [--tab-size=<value>] [--verbose-list] [-W<option>]\n"
                "        [--dependencies=<file>] [--dependencies-append=<file>] [--make-phony]\n"
@@ -886,7 +886,7 @@ int init_arguments(int *argc2, char **argv2[]) {
                "      --simple-labels    Simple hexadecimal labels\n"
                "      --mesen-labels     Mesen labels\n"
                "      --ctags-labels     Tags file\n"
-               "      --dbg-labels       Labels in the .dbg CA65 format\n"
+               "      --cdl-labels       Code Data Logger labels\n"
                "      --labels-root=<l>  List from scope <l> only\n"
                "      --labels-section=<n> List from section <n> only\n"
                "      --labels-add-prefix=<p> Set label prefix\n"

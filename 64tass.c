@@ -1496,7 +1496,8 @@ static MUST_CHECK Code *create_code(linepos_t epoint) {
     code->typ = val_reference(current_address->l_address_val);
     code->size = 0;
     code->offs = 0;
-    code->dtype = D_BYTE;
+    // code->dtype = D_BYTE;
+    code->dtype = D_CODE; // Is this change safe?
     code->pass = 0;
     code->apass = pass;
     code->memblocks = ref_memblocks(current_address->mem);

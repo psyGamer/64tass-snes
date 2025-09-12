@@ -18,6 +18,7 @@
 */
 #include "variables.h"
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include "inttypes.h"
@@ -759,7 +760,7 @@ static void labelmesen_flush(FILE *flab) {
 }
 
 static void labelmesen(Namespace *names, FILE *flab) {
-        size_t n, ln;
+    size_t n, ln;
 
     if (names->len == 0) return;
     ln = names->len; names->len = 0;
@@ -774,14 +775,17 @@ static void labelmesen(Namespace *names, FILE *flab) {
 
             if (val->obj == CODE_OBJ || val->obj == BITS_OBJ) {
                 address_t long_addr;
+                address_t size;
                 bool is_const;
                 if (val-> obj == CODE_OBJ) {
                     const Code *code = Code(val);
                     long_addr = code->addr;
+                    size = code->size;
                     is_const = false;
                 } else if (val->obj == BITS_OBJ) {
                     const Bits *bits = Bits(val);
                     long_addr = bits->data[0];
+                    size = 1; // TODO
                     is_const = true;
                 }
 
@@ -850,29 +854,123 @@ static void labelmesen(Namespace *names, FILE *flab) {
     names->len = ln;
 }
 
-
-static void labeldbg(Namespace *names, FILE *flab) {
-    size_t n;
-
-    // Write all files
-    struct file_lists_s *file_lists = err_file_lists();
-    int file_listsp = err_file_listsp();
-    size_t file_id = 0;
+typedef union {
+    struct {
+        // Generic flags
+        bool code : 1;
+        bool data : 1;
+        bool jump_target : 1;
+        bool sub_entry_point : 1;
     
-    while (file_lists != NULL) {
-        for (n = 0; n < file_listsp; n++) {
-            struct file_s *file = file_lists->file_lists[n].flist.file;
-            if (!file->notfile) {
-                fprintf(flab, "file\tid=%d,name=\"%s\"\n", file_id, file->name);
-                file_id++;
+        // SNES specific flags
+        bool index_mode_8 : 1;
+        bool memory_mode_8 : 1;
+        bool gsu : 1;
+        bool cx4 : 1;
+    } __attribute__((packed));
+    uint8_t raw;
+} cdl_flags_t;
+
+#define MAX_ROM_SIZE (2*1024*1024)
+cdl_flags_t cdl_data[MAX_ROM_SIZE];
+
+static void labelcdl_init() {
+    memset(cdl_data, 0, MAX_ROM_SIZE);
+}
+static void labelcdl_flush(FILE *flab) {
+    fprintf(flab, "CDLv2\xFF\xFF\xFF\xFF");
+    fwrite(cdl_data, sizeof(cdl_flags_t), MAX_ROM_SIZE, flab);
+}
+static void labelcdl(Namespace *names) {
+    size_t n, ln;
+
+    if (names->len == 0) return;
+    ln = names->len; names->len = 0;
+    for (n = 0; n <= names->mask; n++) {
+        Label *l2 = names->data[n];
+        Namespace *ns;
+
+        if (l2 == NULL) continue;
+        if (l2->name.len < 2 || l2->name.data[1] != 0) {
+            const Obj *val = l2->value;
+            const struct file_s *file = l2->file_list->file;
+
+            if (val->obj == CODE_OBJ || val->obj == BITS_OBJ) {
+                address_t long_addr;
+                address_t size;
+                bool is_const;
+                bool is_code;
+                if (val-> obj == CODE_OBJ) {
+                    const Code *code = Code(val);
+                    long_addr = code->addr;
+                    size = code->size;
+                    is_const = false;
+                    is_code = code->dtype == D_CODE;
+                } else if (val->obj == BITS_OBJ) {
+                    const Bits *bits = Bits(val);
+                    long_addr = bits->data[0];
+                    size = 1; // TODO
+                    is_const = true;
+                    is_code = false;
+                }
+
+                uint8_t bank = long_addr >> 16;
+                uint16_t addr = long_addr & 0xFFFF;
+
+                // SNES LoROM specific
+                if (((bank >= 0x00 && bank <= 0x3F) || (bank >= 0x80 && bank <= 0xBF)) && (addr >= 0x2000 && addr <= 0x7FFF)) {
+                    // Do nothing?
+                } else if (long_addr < SNES_WRAM_SIZE && !is_const) {
+                } else if (addr >= 0x8000) {
+                    uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
+                    uint32_t rom_offset = long_addr - bank_start;
+
+
+                    fprintf(stdout, "Data: %i %x %d: ", is_code, rom_offset, size);
+                    labelname_print(l2, stdout, '_');
+                    putc('\n', stdout);
+
+                    cdl_flags_t flag = {
+                        .code = is_code,
+                        .data = !is_code,
+                        .jump_target = false,
+                        .sub_entry_point = false,
+                    
+                        .index_mode_8 = false,
+                        .memory_mode_8 = false,
+                        .gsu = false,
+                        .cx4 = false,
+                    };
+                    memset(cdl_data + rom_offset, flag.raw, size);
+
+                    if (is_code) {
+                        flag.sub_entry_point = true;
+                        cdl_data[rom_offset] = flag;
+                    }
+                } else {
+                    // fprintf(flab, "TODO1:%x:", long_addr);
+                    // labelname_print(l2, flab, '_');
+                    // putc('\n', flab);
+                }
+            } else {
+                // fprintf(flab, "TODO2:%i,%i:", val->obj == BITS_OBJ, val->obj == ADDRESS_OBJ || val->obj == CODE_OBJ || ((val->obj == BITS_OBJ || val->obj == INT_OBJ)));
+                // labelname_print(l2, flab, '_');
+                // putc('\n', flab);
             }
         }
-        
-        struct file_lists_s *old = file_lists;
-        file_lists = file_lists->next;
-        file_listsp = ERR_MAX_NODE_FILES;
-    }
+        if (!l2->owner) continue;
 
+        ns = get_namespace(l2->value);
+
+        if (ns != NULL && ns->len != 0) {
+            if (l2->name.len < 2 || l2->name.data[1] != 0) {
+                push_label(l2);
+                labelcdl(ns);
+                pop_label();
+            }
+        }
+    }
+    names->len = ln;
 }
 
 void labelprint(const struct symbol_output_s *output) {
@@ -911,6 +1009,10 @@ void labelprint(const struct symbol_output_s *output) {
         labelmesen_init();
         labelmesen(space, lp.flab);
         labelmesen_flush(lp.flab);
+    } else if (output->mode == LABEL_CDL) {
+        labelcdl_init();
+        labelcdl(space);
+        labelcdl_flush(lp.flab);
     } else {
         labelprint2(&lp, space);
     }
