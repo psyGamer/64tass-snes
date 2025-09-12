@@ -926,9 +926,9 @@ static void labelcdl(Namespace *names) {
                     uint32_t rom_offset = long_addr - bank_start;
 
 
-                    fprintf(stdout, "Data: %i %x %d: ", is_code, rom_offset, size);
-                    labelname_print(l2, stdout, '_');
-                    putc('\n', stdout);
+                    // fprintf(stdout, "Data: %i %x %d: ", is_code, rom_offset, size);
+                    // labelname_print(l2, stdout, '_');
+                    // putc('\n', stdout);
 
                     cdl_flags_t flag = {
                         .code = is_code,
