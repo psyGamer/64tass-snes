@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h>
+#include "inttypes.h"
 #include "unicode.h"
 #include "64tass.h"
 #include "file.h"
@@ -771,19 +772,34 @@ static void labelmesen(Namespace *names, FILE *flab) {
             const Obj *val = l2->value;
             const struct file_s *file = l2->file_list->file;
 
-            if (val->obj == CODE_OBJ) {
-                const Code *code = Code(val);
+            if (val->obj == CODE_OBJ || val->obj == BITS_OBJ) {
+                address_t long_addr;
+                bool is_const;
+                if (val-> obj == CODE_OBJ) {
+                    const Code *code = Code(val);
+                    long_addr = code->addr;
+                    is_const = false;
+                } else if (val->obj == BITS_OBJ) {
+                    const Bits *bits = Bits(val);
+                    long_addr = bits->data[0];
+                    is_const = true;
+                }
 
-                // SNES LoROM specific, but idc
-                if (code->addr >= 0x808000) {
-                    fprintf(flab, "SnesPrgRom:%x:", code->addr - 0x808000);
-                    labelname_print(l2, flab, '_');
-                    putc('\n', flab);
-                } else {
-                    // fprintf(flab, "SnesWorkRam:%x:", code->addr);
-                    // labelname_print(l2, flab, '_');
-                    // putc('\n', flab);
+                uint8_t bank = long_addr >> 16;
+                uint16_t addr = long_addr & 0xFFFF;
 
+                // SNES LoROM specific
+                if (((bank >= 0x00 && bank <= 0x3F) || (bank >= 0x80 && bank <= 0xBF)) && (addr >= 0x2000 && addr <= 0x7FFF)) {
+                    // Hack, i know..
+                    if (label_stack.p > 0 && memcmp(label_stack.stack[0]->name.data, "regs", 4)) {
+                        fprintf(flab, "SnesRegister:%x:", addr);
+                        labelname_print(l2, flab, '_');
+                        putc('\n', flab);
+                        continue; 
+                    } else {
+                        // Dont write
+                    }
+                } else if (long_addr < SNES_WRAM_SIZE && !is_const) {
                     size_t label_len = l2->name.len;
                     uint32_t p;
                     
@@ -802,10 +818,19 @@ static void labelmesen(Namespace *names, FILE *flab) {
                     memcpy(label, l2->name.data, l2->name.len);
                     label[label_len + l2->name.len] = 0;
 
-                    snes_wram_labels[code->addr] = label;
+                    snes_wram_labels[long_addr] = label;
+                } else if (addr >= 0x8000) {
+                    uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
+                    fprintf(flab, "SnesPrgRom:%x:", long_addr - bank_start);
+                    labelname_print(l2, flab, '_');
+                    putc('\n', flab);
+                } else {
+                    fprintf(flab, "TODO1:%x:", long_addr);
+                    labelname_print(l2, flab, '_');
+                    putc('\n', flab);
                 }
             } else {
-                fprintf(flab, "TODO:");
+                fprintf(flab, "TODO2:%i,%i:", val->obj == BITS_OBJ, val->obj == ADDRESS_OBJ || val->obj == CODE_OBJ || ((val->obj == BITS_OBJ || val->obj == INT_OBJ)));
                 labelname_print(l2, flab, '_');
                 putc('\n', flab);
             }
