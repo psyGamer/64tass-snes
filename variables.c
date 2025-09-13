@@ -896,27 +896,10 @@ static void labelmesen(Namespace *names, FILE *flab) {
     names->len = ln;
 }
 
-typedef union {
-    struct {
-        // Generic flags
-        bool code : 1;
-        bool data : 1;
-        bool jump_target : 1;
-        bool sub_entry_point : 1;
-    
-        // SNES specific flags
-        bool index_mode_8 : 1;
-        bool memory_mode_8 : 1;
-        bool gsu : 1;
-        bool cx4 : 1;
-    } __attribute__((packed));
-    uint8_t raw;
-} cdl_flags_t;
-
 cdl_flags_t cdl_data[MAX_ROM_SIZE];
 
 static void labelcdl_init() {
-    memset(cdl_data, 0, MAX_ROM_SIZE);
+    // memset(cdl_data, 0, MAX_ROM_SIZE);
 }
 static void labelcdl_flush(FILE *flab) {
     fprintf(flab, "CDLv2\xFF\xFF\xFF\xFF");
@@ -970,22 +953,15 @@ static void labelcdl(Namespace *names) {
                     // labelname_print(l2, stdout, MESEN_LABEL_SEP);
                     // putc('\n', stdout);
 
-                    cdl_flags_t flag = {
-                        .code = is_code,
-                        .data = !is_code,
-                        .jump_target = false,
-                        .sub_entry_point = false,
-                    
-                        .index_mode_8 = false,
-                        .memory_mode_8 = false,
-                        .gsu = false,
-                        .cx4 = false,
-                    };
-                    memset(cdl_data + rom_offset, flag.raw, size);
+                    for (size_t el = 0; el < size; el++) {
+                        cdl_data[rom_offset + el].code = is_code;
+                        cdl_data[rom_offset + el].data = !is_code;
+                        cdl_data[rom_offset + el].jump_target = false;
+                        cdl_data[rom_offset + el].sub_entry_point = false;
+                    }
 
                     if (is_code) {
-                        flag.sub_entry_point = true;
-                        cdl_data[rom_offset] = flag;
+                        cdl_data[rom_offset].sub_entry_point = true;
                     }
                 } else {
                     // fprintf(flab, "TODO1:%x:", long_addr);

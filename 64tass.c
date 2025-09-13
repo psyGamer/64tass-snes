@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "error.h"
+#include "inttypes.h"
 #include "opcodes.h"
 #include "eval.h"
 #include "values.h"
@@ -5805,7 +5806,9 @@ MUST_CHECK Obj *compile(void)
                     oldlpoint = lpoint;
                     w = 3; /* 0=byte 1=word 2=long 3=negative/too big */
                     if (here() == 0 || here() == ';') {
-                        // printf("Flush instr '%s' @ %x\n", opname.data, current_address->address);
+                        // printf("Flush instr '%s' @ %x || %i %i\n", opname.data, current_address->address, longaccu, longindex);
+                        cdl_data[current_address->address].memory_mode_8 = !longaccu;
+                        cdl_data[current_address->address].index_mode_8 = !longindex;
                         err = instruction(prm, w, NULL, 0, &epoint);
                     } else {
                         if (arguments.tasmcomp) {
@@ -5834,7 +5837,13 @@ MUST_CHECK Obj *compile(void)
                         }
                         if (!get_exp(3, 0, 0, NULL)) goto breakerr;
                         get_vals_funcargs(&tmp);
+                        address_t prev = current_address->address;
                         err = instruction(prm, w, tmp.val, tmp.len, &epoint);
+                        // printf("Flush instr '%s' @ %x-%x || %i %i %i\n", opname.data, prev, current_address->address, longaccu, longindex);
+                        for (address_t addr = prev; addr < current_address->address; addr++) {
+                            cdl_data[addr].memory_mode_8 = !longaccu;
+                            cdl_data[addr].index_mode_8 = !longindex;
+                        }
                     }
                     if (err == NULL) {
                         if (llist != NULL) listing_instr(0, 0, -1);
