@@ -20,6 +20,7 @@
 #define VARIABLES_H
 #include "stdbool.h"
 #include "inttypes.h"
+#include "str.h"
 
 struct Namespace;
 struct Label;
@@ -27,7 +28,6 @@ struct Obj;
 struct Mfunc;
 struct symbol_output_s;
 struct file_list_s;
-struct str_t;
 
 extern void push_dummy_context(void);
 extern void push_context(struct Namespace *);
@@ -39,8 +39,11 @@ extern void get_namespaces(struct Mfunc *);
 extern size_t context_get_bottom(void);
 extern void context_set_bottom(size_t);
 
+#define MAX_ROM_SIZE       0x200000
+
 extern struct Namespace *current_context, *cheap_context, *root_namespace;
 extern size_t fwcount;
+extern struct str_t rom_comments[];
 extern struct Label *find_label(const struct str_t *, struct Namespace **);
 extern struct Label *find_label2(const struct str_t *, struct Namespace *);
 extern struct Label *find_label3(const struct str_t *, struct Namespace *, uint8_t);

@@ -1406,6 +1406,7 @@ static bool get_exp2(int stop) {
     ignore();
     ch = here();
     if (ch == 0 || ch == ';') {
+        printf("COMMENT: '%s'", pline + lpoint.pos);
         eval->out.end = eval->out.data;
         eval->out.p = eval->out.data;
         return true;
