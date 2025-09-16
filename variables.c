@@ -737,34 +737,41 @@ struct rom_label_t {
     const char *data;
     uint8_t depth;
 };
+struct ram_label_t {
+    const char *data;
+    uint16_t size;
+};
 
 str_t rom_comments[MAX_ROM_SIZE];
 static struct rom_label_t rom_labels[MAX_ROM_SIZE];
-static const char *snes_wram_labels[MAX_SNES_WRAM_SIZE];
+static struct ram_label_t snes_wram_labels[MAX_SNES_WRAM_SIZE];
 
 static void labelmesen_init() {
+    for (size_t n = 0; n < MAX_ROM_SIZE; n++) {
+        rom_labels[n].data = NULL;
+    }
     for (size_t n = 0; n < MAX_SNES_WRAM_SIZE; n++) {
-        snes_wram_labels[n] = NULL;
+        snes_wram_labels[n].data = NULL;
     }
 }
 static void labelmesen_flush(FILE *flab) {
-    const char *last_l = NULL;
-    address_t last_addr = 0;
+    // const char *last_l = NULL;
+    // address_t last_addr = 0;
 
-    for (uint32_t n = 0; n < MAX_SNES_WRAM_SIZE; n++) {
-        if (snes_wram_labels[n] == NULL) continue;
+    // for (uint32_t n = 0; n < MAX_SNES_WRAM_SIZE; n++) {
+    //     if (snes_wram_labels[n].data == NULL) continue;
 
-        if (last_l != NULL) {
-            if (last_addr != n - 1) {
-                fprintf(flab, "SnesWorkRam:%x-%x:%s\n", last_addr, n - 1, last_l);
-            } else {
-                fprintf(flab, "SnesWorkRam:%x:%s\n", last_addr, last_l);
-            }
-        }
+    //     if (last_l != NULL) {
+    //         if (last_addr != n - 1) {
+    //             fprintf(flab, "SnesWorkRam:%x-%x:%s\n", last_addr, n - 1, last_l);
+    //         } else {
+    //             fprintf(flab, "SnesWorkRam:%x:%s\n", last_addr, last_l);
+    //         }
+    //     }
 
-        last_l = snes_wram_labels[n];
-        last_addr = n;
-    }
+    //     last_l = snes_wram_labels[n];
+    //     last_addr = n;
+    // }
 
     for (size_t n = 0; n < MAX_ROM_SIZE; n++) {
         bool w = false;
@@ -821,6 +828,10 @@ static void labelmesen(Namespace *names, FILE *flab) {
             const Obj *val = l2->value;
             const struct file_s *file = l2->file_list->file;
 
+            if (l2->name.len == 0 || l2->name.data[0] == '_') {
+                continue; // Skip when prefixed with _
+            }
+
             if (val->obj == CODE_OBJ || val->obj == BITS_OBJ) {
                 address_t long_addr;
                 address_t size;
@@ -830,7 +841,6 @@ static void labelmesen(Namespace *names, FILE *flab) {
                     long_addr = code->addr;
                     size = code->size;
                     is_const = false;
-                    // printf("CODE %i;", code->dtype);
                 } else if (val->obj == BITS_OBJ) {
                     const Bits *bits = Bits(val);
                     long_addr = bits->data[0];
@@ -840,11 +850,14 @@ static void labelmesen(Namespace *names, FILE *flab) {
 
                 uint8_t bank = long_addr >> 16;
                 uint16_t addr = long_addr & 0xFFFF;
+                fprintf(stdout, "Label @ %x %d:", long_addr, size);
+                labelname_print(l2, stdout, MESEN_LABEL_SEP);
+                putc('\n', stdout);
 
                 // SNES LoROM specific
                 if (((bank >= 0x00 && bank <= 0x3F) || (bank >= 0x80 && bank <= 0xBF)) && (addr >= 0x2000 && addr <= 0x7FFF)) {
                     // Hack, i know..
-                    if (label_stack.p > 0 && memcmp(label_stack.stack[0]->name.data, "regs", 4)) {
+                    if (label_stack.p > 0 && memcmp(label_stack.stack[0]->name.data, "regs", 4) != 0) {
                         fprintf(flab, "SnesRegister:%x:", addr);
                         labelname_print(l2, flab, MESEN_LABEL_SEP);
                         putc('\n', flab);
@@ -853,12 +866,18 @@ static void labelmesen(Namespace *names, FILE *flab) {
                         // Dont write
                     }
                 } else if (long_addr < MAX_SNES_WRAM_SIZE && !is_const) {
-                    snes_wram_labels[long_addr] = dupe_label(l2);
+                    // snes_wram_labels[long_addr] = dupe_label(l2);
+                    if (size == 1) {
+                        fprintf(flab, "SnesWorkRam:%x:", addr);
+                    } else {
+                        fprintf(flab, "SnesWorkRam:%x-%x:", addr, addr+size-1);
+                    }
+                    labelname_print(l2, flab, MESEN_LABEL_SEP);
+                    putc('\n', flab);
                     // printf("WRAM: %x %d '%s' %i\n", long_addr, size, snes_wram_labels[long_addr], val->obj == CODE_OBJ);
                 } else if (addr >= 0x8000) {
                     uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
                     uint32_t rom_offset = long_addr - bank_start;
-
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE && (rom_labels[rom_offset].data == NULL || rom_labels[rom_offset].depth < label_stack.p || (rom_labels[rom_offset].depth == label_stack.p && size != 0))) {
                         struct rom_label_t rom_label = { .data = dupe_label(l2), .depth = label_stack.p };
                         rom_labels[rom_offset] = rom_label;
