@@ -47,6 +47,7 @@ uint32_t dpage;
 unsigned int databank;
 bool longbranchasjmp;
 bool allowslowbranch;
+bool disable_dbg_labels;
 
 int lookup_opcode(const uint8_t *s) {
     int32_t s4;

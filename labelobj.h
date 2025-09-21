@@ -41,6 +41,7 @@ typedef struct Label {
     uint8_t defpass;
     uint8_t strength;
     uint8_t fwpass;
+    bool export_label;
 } Label;
 
 #define Label(a) OBJ_CAST(Label, a)

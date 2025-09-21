@@ -19,6 +19,7 @@
 #include "codeobj.h"
 #include <string.h>
 #include "eval.h"
+#include "listing.h"
 #include "mem.h"
 #include "64tass.h"
 #include "section.h"

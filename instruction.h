@@ -41,4 +41,5 @@ extern uint32_t dpage;
 extern unsigned int databank;
 extern bool longbranchasjmp;
 extern bool allowslowbranch;
+extern bool disable_dbg_labels;
 #endif

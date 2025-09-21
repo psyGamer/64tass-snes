@@ -1505,6 +1505,7 @@ static MUST_CHECK Code *create_code(linepos_t epoint) {
     code->names = new_namespace(current_file_list, epoint);
     code->required = current_section->required;
     code->conflicts = current_section->conflicts;
+    if (star == 0x7F0000) printf("HALLLO %i %i", nolisting, pass);
     return code;
 }
 

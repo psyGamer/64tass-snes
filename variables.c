@@ -22,6 +22,7 @@
 #include <string.h>
 #include <errno.h>
 #include "inttypes.h"
+#include "listing.h"
 #include "macroobj.h"
 #include "str.h"
 #include "unicode.h"
@@ -444,6 +445,7 @@ Label *new_label(const str_t *name, Namespace *context, uint8_t strength, const 
         lastlb->fwpass = 0;
         lastlb->value = NULL;
         lastlb->defpass = pass;
+        lastlb->export_label = nolisting == 0;
         b = lastlb;
         lastlb = NULL;
     }
@@ -833,7 +835,7 @@ static void labelmesen(Namespace *names, FILE *flab) {
             const Obj *val = l2->value;
             const struct file_s *file = l2->file_list->file;
 
-            if (l2->name.len == 0 || l2->name.data[0] == '_') {
+            if (l2->name.len == 0 || l2->name.data[0] == '_' || !l2->export_label) {
                 continue; // Skip when prefixed with _
             }
 
@@ -856,21 +858,15 @@ static void labelmesen(Namespace *names, FILE *flab) {
 
                 uint8_t bank = long_addr >> 16;
                 uint16_t addr = long_addr & 0xFFFF;
-                fprintf(stdout, "Label @ %x %d:", long_addr, size);
+                fprintf(stdout, "Label @ %x %d %i:", long_addr, size, l2->export_label);
                 labelname_print(l2, stdout, MESEN_LABEL_SEP);
                 putc('\n', stdout);
 
                 // SNES LoROM specific
                 if (((bank >= 0x00 && bank <= 0x3F) || (bank >= 0x80 && bank <= 0xBF)) && (addr >= 0x2000 && addr <= 0x7FFF)) {
-                    // Hack, i know..
-                    if (label_stack.p > 0 && memcmp(label_stack.stack[0]->name.data, "regs", 4) != 0) {
-                        fprintf(flab, "SnesRegister:%x:", addr);
-                        labelname_print(l2, flab, MESEN_LABEL_SEP);
-                        putc('\n', flab);
-                        continue; 
-                    } else {
-                        // Dont write
-                    }
+                    fprintf(flab, "SnesRegister:%x:", addr);
+                    labelname_print(l2, flab, MESEN_LABEL_SEP);
+                    putc('\n', flab);
                 } else if ((long_addr >= 0 && long_addr <= 0x1FFF || bank == 0x7E || bank == 0x7F) && !is_const) {
                     address_t offset = addr + (bank == 0x7F ? 0x10000 : 0);
                     if (size == 1) {
@@ -943,7 +939,7 @@ static void labelcdl(Namespace *names) {
         Label *l2 = names->data[n];
         Namespace *ns;
 
-        if (l2 == NULL) continue;
+        if (l2 == NULL || !l2->export_label) continue;
         if (l2->name.len < 2 || l2->name.data[1] != 0) {
             const Obj *val = l2->value;
             const struct file_s *file = l2->file_list->file;
@@ -982,15 +978,17 @@ static void labelcdl(Namespace *names) {
                     // labelname_print(l2, stdout, MESEN_LABEL_SEP);
                     // putc('\n', stdout);
 
-                    for (size_t el = 0; el < size; el++) {
-                        cdl_data[rom_offset + el].code = is_code;
-                        cdl_data[rom_offset + el].data = !is_code;
-                        cdl_data[rom_offset + el].jump_target = false;
-                        cdl_data[rom_offset + el].sub_entry_point = false;
-                    }
+                    if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
+                        for (size_t el = 0; el < size; el++) {
+                            cdl_data[rom_offset + el].code = is_code;
+                            cdl_data[rom_offset + el].data = !is_code;
+                            cdl_data[rom_offset + el].jump_target = false;
+                            cdl_data[rom_offset + el].sub_entry_point = false;
+                        }
 
-                    if (is_code) {
-                        cdl_data[rom_offset].sub_entry_point = true;
+                        if (is_code) {
+                            cdl_data[rom_offset].sub_entry_point = true;
+                        }
                     }
                 } else {
                     // fprintf(flab, "TODO1:%x:", long_addr);

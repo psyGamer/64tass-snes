@@ -24,6 +24,7 @@
 #include "unicode.h"
 #include "error.h"
 #include "arguments.h"
+#include "listing.h"
 
 #include "codeobj.h"
 #include "boolobj.h"
