@@ -922,6 +922,7 @@ static void labelmesen(Namespace *names, FILE *flab) {
 }
 
 cdl_flags_t cdl_data[MAX_ROM_SIZE];
+bool gap_data[MAX_ROM_SIZE];
 
 static void labelcdl_init() {
     // memset(cdl_data, 0, MAX_ROM_SIZE);
@@ -980,8 +981,8 @@ static void labelcdl(Namespace *names) {
 
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
                         for (size_t el = 0; el < size; el++) {
-                            cdl_data[rom_offset + el].code = is_code;
-                            cdl_data[rom_offset + el].data = !is_code;
+                            cdl_data[rom_offset + el].code = is_code && !gap_data[rom_offset + el];
+                            cdl_data[rom_offset + el].data = !is_code && !gap_data[rom_offset + el];
                             cdl_data[rom_offset + el].jump_target = false;
                             cdl_data[rom_offset + el].sub_entry_point = false;
                         }

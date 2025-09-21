@@ -63,6 +63,7 @@ extern struct Namespace *current_context, *cheap_context, *root_namespace;
 extern size_t fwcount;
 extern struct str_t rom_comments[];
 extern cdl_flags_t cdl_data[];
+extern bool gap_data[];
 extern struct Label *find_label(const struct str_t *, struct Namespace **);
 extern struct Label *find_label2(const struct str_t *, struct Namespace *);
 extern struct Label *find_label3(const struct str_t *, struct Namespace *, uint8_t);

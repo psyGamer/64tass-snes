@@ -4921,6 +4921,17 @@ MUST_CHECK Obj *compile(void)
                                 itt = (itt - current_address->l_start) & all_mem;
                             }
                             itt2 = (s->pass != 0) ? itt - (s->addr - oldstar) : itt;
+                            if (pass == 5) {
+                                for (address_t p = oldstar; p < s->addr; p++) {
+                                    uint32_t bank_start = 0x808000 + ((p >> 16) - 0x80) * 0x8000;
+                                    uint32_t rom_offset = p - bank_start;
+                                    if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
+                                        gap_data[rom_offset] = true;
+                                    }
+                                    printf("GAP %x %x %x\n", bank_start, rom_offset, p);
+                                }
+                            }
+                            // printf("ALGIN: %x -> %x %i\n", oldstar, s->addr, pass);
                             vs2 = get_val();
                             offset = (vs2 == NULL) ? 0 : memalign_offset(get_val(), uval);
                             db = rmemalign(offset, uval, itt2);
