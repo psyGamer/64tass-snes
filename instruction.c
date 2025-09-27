@@ -18,6 +18,7 @@
 */
 #include "instruction.h"
 #include <string.h>
+#include "inttypes.h"
 #include "opcodes.h"
 #include "64tass.h"
 #include "section.h"
@@ -149,6 +150,16 @@ static void dump_instr(unsigned int cod, uint32_t adr, int ln, linepos_t epoint)
         }
     }
     listing_instr(cod, adr, ln);
+}
+
+static void map_memory(address_t target) {
+    uint8_t  bank = target >> 16;
+    uint16_t addr = target & 0xFFFF;
+
+    // SNES LoROM memory mapping
+    {
+        
+    }
 }
 
 typedef enum Adrgen {
@@ -1241,13 +1252,28 @@ retry:
                     uval_t uval3;
                     uval2 &= all_mem;
                     uval3 = (opr == OPR_ZP || opcode == c65el02.opcode || opcode == w65816.opcode) ? (uval & all_mem) : uval2;
+
+                    uint8_t  bank = (uval & all_mem) >> 16;
+                    uint16_t addr = uval3 & 0xFFFF;
+                    bool in_shared =
+                        ((bank >= 0x00 && bank < 0x40 || bank >= 0x80 && bank < 0xC0) && addr >= 0x0000 && addr < 0x6000) ||
+                        (bank == 0x7E && addr >= 0x0000 && addr < 0x2000);
+                    bool in_databank =
+                        (databank == bank) ||
+                        // LoROM mirroring
+                        ((databank >= 0x80 && databank < 0x100) && databank - 0x80 == bank) ||
+                        ((bank >= 0x80 && bank < 0x100) && databank == bank - 0x80) ||
+                        // WRAM mirroring
+                        (databank == 0x7E && (bank >= 0x00 && bank < 0x40 || bank >= 0x80 && bank < 0xC0) && addr >= 0x0000 && addr < 0x2000) ||
+                        (bank == 0x7E && (databank >= 0x00 && databank < 0x40 || databank >= 0x80 && databank < 0xC0) && addr >= 0x0000 && addr < 0x2000);
+                    
                     if (diagnostics.altmode) {
-                        if (uval3 <= 0xffff && dpage <= 0xffff && (uint16_t)(uval3 - dpage) <= 0xff) w = 0;
-                        else if (databank == ((uval & all_mem) >> 16) || adrgen != AG_DB3) w = 1;
+                        if ((uval3 <= 0xffff && dpage <= 0xffff && (uint16_t)(uval3 - dpage) <= 0xff) || (in_shared && (uint16_t)(addr - dpage) <= 0xff)) w = 0;
+                        else if (in_databank || adrgen != AG_DB3) w = 1;
                         else w = 2;
                     }
 
-                    if (is_amode(amode, ADR_ZP) && uval3 <= 0xffff && dpage <= 0xffff && (uint16_t)(uval3 - dpage) <= 0xff) {
+                    if (is_amode(amode, ADR_ZP) && (uval3 <= 0xffff && dpage <= 0xffff && (uint16_t)(uval3 - dpage) <= 0xff) || (in_shared && (uint16_t)(addr - dpage) <= 0xff)) {
                         if (diagnostics.immediate && opr == OPR_ZP && is_amode(amode, ADR_IMMEDIATE) && (val->obj != CODE_OBJ || Code(val)->memblocks->enumeration) && val->obj != ADDRESS_OBJ) err_msg2(ERROR_NONIMMEDCONST, NULL, epoint2);
                         else if (w != 3 && w != 0) err_msg_address_mismatch(opr-0, opr-w, epoint2);
                         adr = uval - dpage; w = 0;
@@ -1256,7 +1282,7 @@ retry:
                         } else {
                             if (adr > 0xff) err_msg_dpage_wrap(epoint2);
                         }
-                    } else if (is_amode(amode, ADR_ADDR) && databank == ((uval & all_mem) >> 16)) {
+                    } else if (is_amode(amode, ADR_ADDR) && in_databank) {
                         if (w != 3 && w != 1) err_msg_address_mismatch(opr-1, opr-w, epoint2);
                         adr = uval; w = 1;
                         if ((uval & all_mem) != uval) err_msg_addr_wrap(epoint2);
@@ -1265,6 +1291,7 @@ retry:
                         adr = uval; w = 2;
                         if ((uval & all_mem) != uval) err_msg_addr_wrap(epoint2);
                     } else {
+                        printf("Err1 %x %x %x: %x %x || %x %x %x || %i\n", uval, uval2, uval3, bank, addr, databank, star >> 16, dpage, in_shared);
                         w = is_amode(amode, ADR_ADDR) ? 1 : 0;
                         err_msg2((w != 0) ? ERROR__NOT_DATABANK : ERROR____NOT_DIRECT, val2, epoint2);
                     }
@@ -1299,6 +1326,7 @@ retry:
                     if (!is_amode(amode, ADR_ADDR)) return err_addressize(ERROR__NO_WORD_ADDR, epoint2, prm);
                     uval &= all_mem;
                     adr = uval;
+                    printf("Err2\n");
                     if (databank != (uval >> 16)) err_msg2(ERROR__NOT_DATABANK, val2, epoint2);
                     else if ((uval & all_mem) != uval) err_msg_addr_wrap(epoint2);
                     break;

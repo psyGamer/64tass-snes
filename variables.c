@@ -847,6 +847,9 @@ static void labelmesen(Namespace *names, FILE *flab) {
                     const Code *code = Code(val);
                     long_addr = code->addr;
                     size = code->dtype == D_CODE ? 1 : code->size; // Only create 1 label for code
+                    if (code->size == 0) {
+                        size = 0; // Avoid bumping 0-sized objects to 1
+                    }
                     is_const = false;
                     printf("Code: %i: ", code->dtype);
                 } else if (val->obj == BITS_OBJ) {
