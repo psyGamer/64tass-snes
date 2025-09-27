@@ -3860,16 +3860,11 @@ MUST_CHECK Obj *compile(void)
             const uint8_t *comment = pline + lpoint.pos;
             size_t comment_len = strlen(comment);
             // Only in pass 3 are the real address values available
-            if (pass == 3 && (waitfor->skip & 1) != 0 && comment_len > 0) {
+            if (pass == 3 && (waitfor->skip & 1) != 0 && comment_len > 0 && nolisting == 0) {
                 uint8_t bank = current_address->l_address >> 16;
                 uint16_t addr = current_address->l_address & 0xFFFF;
 
                 if (addr >= 0x8000) {
-                    // char *comment_dupe = allocate_array(char, comment_len+1);
-                    // memcpy(comment_dupe, comment, comment_len + 1);
-
-                    // str_t comment_str = { .data = comment_dupe, .len = comment_len };
-
                     uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
                     size_t rom_offset = current_address->l_address - bank_start;
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
@@ -3885,21 +3880,7 @@ MUST_CHECK Obj *compile(void)
                             rom_comments[rom_offset].single_line = false;
                             // printf("COMMENT: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
                         }
-                        
-                        
                     }
-
-                    // printf("COMMENT: '%s' | %x | %d\n", comment, current_address->l_address - bank_start, pass);
-
-
-                    // Obj *val = get_star_value(current_address->l_address, current_address->l_address_val);
-                    // val = val->obj->repr(val, NULL, SIZE_MAX);
-                    // if (val->obj == STR_OBJ) {
-                    //     const Str *str = Str(val);
-                    //     printable_print2(str->data, stdout, str->len);
-                    //     fputc('\n', stdout);
-                    // }
-                    // val_destroy(val);
                 }
             }
             
@@ -4642,7 +4623,7 @@ MUST_CHECK Obj *compile(void)
                 break;
             case CMD_BLOCK: if ((waitfor->skip & 1) != 0)
                 { /* .block */
-                    if (pass == 3 && curr_doc_comment.data != NULL) {
+                    if (pass == 3 && curr_doc_comment.data != NULL && nolisting == 0) {
                         uint8_t bank = current_address->l_address >> 16;
                         uint16_t addr = current_address->l_address & 0xFFFF;
     

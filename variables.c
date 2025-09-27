@@ -779,6 +779,7 @@ static void labelmesen_flush(FILE *flab) {
 
     for (size_t n = 0; n < MAX_ROM_SIZE; n++) {
         if (rom_comments[n].text.data != NULL && !rom_comments[n].single_line) {
+            // Expand to multiline if needed
             str_t *text = &rom_comments[n].text;
             
             const char *start = text->data;
@@ -795,8 +796,6 @@ static void labelmesen_flush(FILE *flab) {
             
             str_t str = { .data = data, .len = 2 + text->len };
             *text = str;
-
-            // rom_comments[n].text = join_comment(rom_comments[n].text, " ", sizeof " " - 1);
         }
         next_comment:
     }
@@ -804,14 +803,33 @@ static void labelmesen_flush(FILE *flab) {
     for (size_t n = 0; n < MAX_ROM_SIZE; n++) {
         bool w = false;
         if (rom_labels[n].data != NULL) {
-            if (rom_labels[n].size > 1) {            
+            if (rom_labels[n].size > 1) {
                 fprintf(flab, "SnesPrgRom:%x-%x:%s", n, n + rom_labels[n].size - 1, rom_labels[n].data);
             } else {
                 fprintf(flab, "SnesPrgRom:%x:%s", n, rom_labels[n].data);
             }
 
             if (rom_comments[n].text.data != NULL) {
-                fprintf(flab, ":%s\n", rom_comments[n].text.data);
+                // Merge comments
+                bool first = true;
+                for (size_t el = 0; el < rom_labels[n].size; el++) {
+                    if (rom_comments[n + el].text.data != NULL) {
+                        if (first) {
+                            fprintf(flab, ":%s", rom_comments[n + el].text.data);
+                        } else {
+                            fprintf(flab, "\\n%s", rom_comments[n + el].text.data);
+                        }
+                        first = false;
+
+                        if (el > 0) {
+                            rom_comments[n + el].text.data = NULL; // Avoid double write
+                        }
+                    }
+                }
+                if (!first) {
+                    fputc('\n', flab);
+                }
+                // fprintf(flab, "\n");
             } else {
                 fputc('\n', flab);
             }
