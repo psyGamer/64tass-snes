@@ -1,8 +1,17 @@
 
-# 64tass
+# 64tass-snes
 
-64tass is a multi pass optimizing macro assembler for the 65xx series of
+64tass-snes is a multi pass optimizing macro assembler for the 65xx series of
 processors.
+
+## SNES Specific Features
+
+This fork of the original [64tass](https://sourceforge.net/projects/tass64/) is specifically made for the development, targeting the SNES.
+The notable additional features are:
+- Respect the SNES memory map (currently only LoROM) while deciding the best addressing mode for instructions
+- `--mesen-labels` providing an extensive debugging information, as a `.mlb` file for Mesen2
+- `--cdl-labels` providing annotations about code vs. data and register sizes, as a `.cdl` for Mesen2
+- Allow toggling symbol exporting with `.pron`/`.proff`
 
 ## Installation
 
