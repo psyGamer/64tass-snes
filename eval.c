@@ -1571,6 +1571,11 @@ static bool get_exp2(int stop) {
             goto push_other;
         case 0:
         case ';':
+            const uint8_t *comment = pline + lpoint.pos;
+            size_t comment_len = strlen(comment);
+            if (comment_len > 0) {
+                printf("COMMBR %s || %s\n", pline, comment);
+            }
             goto tryanon;
         default:
             llen = (linecpos_t)get_label(pline + lpoint.pos);
@@ -1971,10 +1976,29 @@ static bool get_exp2(int stop) {
                 } else mis = "'}' not";
                 err_msg2(ERROR______EXPECTED, mis, &lpoint); goto error;
             } while (true);
-        case 0:
         case ';':
+            const uint8_t *comment = pline + lpoint.pos;
+            size_t comment_len = strlen(comment);
+            // Only in pass 3 are the real address values available
+            if (pass == 3 && comment_len > 0) {
+                uint8_t bank = current_address->l_address >> 16;
+                uint16_t addr = current_address->l_address & 0xFFFF;
+
+                if (addr >= 0x8000) {
+                    uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
+                    size_t rom_offset = current_address->l_address - bank_start;
+                    if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
+                        rom_comments[rom_offset].text = join_comment(rom_comments[rom_offset].text, comment + 1, comment_len - 1);
+                        rom_comments[rom_offset].single_line = true;
+                            printf("COMMENT: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
+                    }
+                }
+            }
+            FALL_THROUGH; /* fall through */
+        case 0:
         case '\t':
-        case ' ': break;
+        case ' ':
+            break;
         default:
             llen = (linecpos_t)get_label(pline + lpoint.pos);
             lpoint.pos += llen;

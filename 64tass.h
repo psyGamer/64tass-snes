@@ -47,4 +47,5 @@ extern bool close_waitfor(Wait_types);
 extern struct Obj *compile(void);
 extern FAST_CALL uint8_t *pokealloc(address_t, linepos_t);
 extern int main2(int *, char **[]);
+struct str_t join_comment(struct str_t old, const char *new_data, size_t new_len);
 #endif

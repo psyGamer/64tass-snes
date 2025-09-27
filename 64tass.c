@@ -2461,7 +2461,7 @@ static MUST_CHECK Label *new_anonlabel(Namespace *context) {
 
 static str_t curr_doc_comment;
 
-static str_t join_comment(str_t old, const char *new_data, size_t new_len) {
+str_t join_comment(str_t old, const char *new_data, size_t new_len) {
     if (old.data == NULL) {
         uint8_t *data = allocate_array(uint8_t, new_len + 1);
         memcpy(data, new_data, new_len + 1);
@@ -2477,7 +2477,7 @@ static str_t join_comment(str_t old, const char *new_data, size_t new_len) {
     memcpy(data + 2 + old.len, new_data, new_len);
     data[old.len + 2 + new_len] = 0;
     
-    str_t str = { .data = data, .len = old.len + 2 + new_len };
+    str_t str = { .data = data, .len = old.len + 3 + new_len };
     return str;
 }
 
@@ -3881,8 +3881,9 @@ MUST_CHECK Obj *compile(void)
                             curr_doc_comment = join_comment(curr_doc_comment, comment + 1, comment_len - 1);
                             // printf("DOC COMMENT: '%s' | %x | %i\n", curr_doc_comment.data, current_address->l_address - bank_start, pass);
                         } else {
-                            rom_comments[rom_offset] = join_comment(rom_comments[rom_offset], comment + 1, comment_len - 1);
-                            // printf("COMMENT: '%s' | %x | %i\n", rom_comments[rom_offset].data, current_address->l_address - bank_start, pass);
+                            rom_comments[rom_offset].text = join_comment(rom_comments[rom_offset].text, comment + 1, comment_len - 1);
+                            rom_comments[rom_offset].single_line = false;
+                            // printf("COMMENT: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
                         }
                         
                         
@@ -4649,7 +4650,8 @@ MUST_CHECK Obj *compile(void)
                             uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
                             size_t rom_offset = current_address->l_address - bank_start;
                             if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
-                                rom_comments[rom_offset] = curr_doc_comment;
+                                rom_comments[rom_offset].text = curr_doc_comment;
+                                rom_comments[rom_offset].single_line = false;
                                 curr_doc_comment.data = NULL;
                                 
                                 // printf("BLOCK COMMENT: '%s' | %x\n", rom_comments[rom_offset].data, current_address->l_address - bank_start);

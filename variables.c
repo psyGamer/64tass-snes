@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <strings.h>
 #include "inttypes.h"
 #include "listing.h"
 #include "macroobj.h"
@@ -745,7 +746,7 @@ struct ram_label_t {
     uint16_t size;
 };
 
-str_t rom_comments[MAX_ROM_SIZE];
+struct rom_comment_t rom_comments[MAX_ROM_SIZE];
 static struct rom_label_t rom_labels[MAX_ROM_SIZE];
 static struct ram_label_t snes_wram_labels[MAX_SNES_WRAM_SIZE];
 
@@ -777,6 +778,30 @@ static void labelmesen_flush(FILE *flab) {
     // }
 
     for (size_t n = 0; n < MAX_ROM_SIZE; n++) {
+        if (rom_comments[n].text.data != NULL && !rom_comments[n].single_line) {
+            str_t *text = &rom_comments[n].text;
+            
+            const char *start = text->data;
+            const char *end = start + text->len - 1;
+            for (const char *p = start; p != end; p++) {
+                if (*p == '\\' && *(p+1) == 'n') goto next_comment;
+            }
+
+            uint8_t *data = allocate_array(uint8_t, 2 + text->len + 1);
+            memcpy(data + 2, text->data, text->len);
+            data[0] = '\\';
+            data[1] = 'n';
+            data[2 + text->len] = 0;
+            
+            str_t str = { .data = data, .len = 2 + text->len };
+            *text = str;
+
+            // rom_comments[n].text = join_comment(rom_comments[n].text, " ", sizeof " " - 1);
+        }
+        next_comment:
+    }
+
+    for (size_t n = 0; n < MAX_ROM_SIZE; n++) {
         bool w = false;
         if (rom_labels[n].data != NULL) {
             if (rom_labels[n].size > 1) {            
@@ -785,13 +810,13 @@ static void labelmesen_flush(FILE *flab) {
                 fprintf(flab, "SnesPrgRom:%x:%s", n, rom_labels[n].data);
             }
 
-            if (rom_comments[n].data != NULL) {
-                fprintf(flab, ":%s\n", rom_comments[n].data);
+            if (rom_comments[n].text.data != NULL) {
+                fprintf(flab, ":%s\n", rom_comments[n].text.data);
             } else {
                 fputc('\n', flab);
             }
-        } else if (rom_comments[n].data != NULL) {
-            fprintf(flab, "SnesPrgRom:%x::%s\n", n, rom_comments[n].data);
+        } else if (rom_comments[n].text.data != NULL) {
+            fprintf(flab, "SnesPrgRom:%x::%s\n", n, rom_comments[n].text.data);
         }
     }
 
