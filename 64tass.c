@@ -1505,7 +1505,6 @@ static MUST_CHECK Code *create_code(linepos_t epoint) {
     code->names = new_namespace(current_file_list, epoint);
     code->required = current_section->required;
     code->conflicts = current_section->conflicts;
-    if (star == 0x7F0000) printf("HALLLO %i %i", nolisting, pass);
     return code;
 }
 
@@ -3878,7 +3877,7 @@ MUST_CHECK Obj *compile(void)
                         } else {
                             rom_comments[rom_offset].text = join_comment(rom_comments[rom_offset].text, comment + 1, comment_len - 1);
                             rom_comments[rom_offset].single_line = false;
-                            // printf("COMMENT: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
+                            printf("COMMENT: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
                         }
                     }
                 }
@@ -5801,6 +5800,24 @@ MUST_CHECK Obj *compile(void)
                     oldlpoint = lpoint;
                     w = 3; /* 0=byte 1=word 2=long 3=negative/too big */
                     if (here() == 0 || here() == ';') {
+                        const uint8_t *comment = pline + lpoint.pos;
+                        size_t comment_len = strlen(comment);
+                        // Only in pass 3 are the real address values available
+                        if (pass == 3 && comment_len > 0 && nolisting == 0) {
+                            uint8_t bank = current_address->l_address >> 16;
+                            uint16_t addr = current_address->l_address & 0xFFFF;
+
+                            if (addr >= 0x8000) {
+                                uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
+                                size_t rom_offset = current_address->l_address - bank_start;
+                                if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
+                                    rom_comments[rom_offset].text = join_comment(rom_comments[rom_offset].text, comment + 1, comment_len - 1);
+                                    rom_comments[rom_offset].single_line = true;
+                                    printf("COMMENTAFTER2: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
+
+                                }
+                            }
+                        }
                         // printf("Flush instr '%s' @ %x || %i %i\n", opname.data, current_address->address, longaccu, longindex);
                         cdl_data[current_address->address].memory_mode_8 = !longaccu;
                         cdl_data[current_address->address].index_mode_8 = !longindex;

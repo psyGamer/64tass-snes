@@ -826,13 +826,9 @@ static void labelmesen_flush(FILE *flab) {
                         }
                     }
                 }
-                if (!first) {
-                    fputc('\n', flab);
-                }
-                // fprintf(flab, "\n");
-            } else {
-                fputc('\n', flab);
             }
+
+            fputc('\n', flab);
         } else if (rom_comments[n].text.data != NULL) {
             fprintf(flab, "SnesPrgRom:%x::%s\n", n, rom_comments[n].text.data);
         }

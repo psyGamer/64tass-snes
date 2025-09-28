@@ -19,6 +19,7 @@
 
 #include "eval.h"
 #include <string.h>
+#include "listing.h"
 #include "math.h"
 #include "section.h"
 #include "variables.h"
@@ -1980,7 +1981,7 @@ static bool get_exp2(int stop) {
             const uint8_t *comment = pline + lpoint.pos;
             size_t comment_len = strlen(comment);
             // Only in pass 3 are the real address values available
-            if (pass == 3 && comment_len > 0) {
+            if (pass == 3 && comment_len > 0 && nolisting == 0) {
                 uint8_t bank = current_address->l_address >> 16;
                 uint16_t addr = current_address->l_address & 0xFFFF;
 
@@ -1990,7 +1991,8 @@ static bool get_exp2(int stop) {
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
                         rom_comments[rom_offset].text = join_comment(rom_comments[rom_offset].text, comment + 1, comment_len - 1);
                         rom_comments[rom_offset].single_line = true;
-                            printf("COMMENT: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
+                        printf("COMMENTAFTER: '%s' | %x | %i\n", rom_comments[rom_offset].text.data, current_address->l_address - bank_start, pass);
+
                     }
                 }
             }

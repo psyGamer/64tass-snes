@@ -165,6 +165,10 @@ bool mtranslate(void) {
             p2++;
             continue;
         case ';':
+            size_t comment_len = strlen(p2);
+            if (q == 0 && comment_len > 0) {
+                printf("COMMMAC2 %s || %s || %x\n", pline, p2, current_address->l_address);
+            }
             if (q == 0) q = 4;
             p2++;
             continue;
@@ -351,7 +355,7 @@ static size_t macro_param_find(void) {
         lpoint.pos++;
     }
     npoint2.pos = lpoint.pos;
-    while (npoint2.pos > opoint2.pos && (pline[npoint2.pos-1] == 0x20 || pline[npoint2.pos-1] == 0x09)) npoint2.pos--;
+    while (npoint2.pos > opoint2.pos && (pline[npoint2.pos-1] == ' ' || pline[npoint2.pos-1] == '\t')) npoint2.pos--;
     if (par != pbuf) free(par);
     return npoint2.pos - opoint2.pos;
 }
@@ -764,6 +768,11 @@ void get_macro_params(Obj *v) {
         } else {param->init.len = 0; param->init.data = NULL;}
         ignore();
         if (here() == 0 || here() == ';') {
+            const uint8_t *comment = pline + lpoint.pos;
+            size_t comment_len = strlen(comment);
+            if (comment_len > 0) {
+                printf("COMMMAC %s || %s\n", pline, comment);
+            }
             break;
         }
         if (here() != ',') {
