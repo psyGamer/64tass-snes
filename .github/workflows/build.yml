@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Compile for all platforms
+        run: |
+          zig build -Dtarget=x86_64-linux -p linux-x86_64
+          zig build -Dtarget=aarch64-linux -p linux-aarch64
+          zig build -Dtarget=x86_64-macos -p macos-x86_64
+          zig build -Dtarget=aarch64-macos -p macos-aarch64
+          zig build -Dtarget=x86_64-windows -p windows-x86_64
+          zig build -Dtarget=aarch64-windows -p windows-aarch64
+
+      - name: Upload Linux x86_64
+        uses: actions/upload-artifact@v4
+        with:
+          name: 64tass-snes-linux-x86_64
+          path: linux-x86_64/bin/*
+      - name: Upload Linux ARM64
+        uses: actions/upload-artifact@v4
+        with:
+          name: 64tass-snes-linux-aarch64
+          path: linux-aarch64/bin/*
+
+      - name: Upload macOS x86_64
+        uses: actions/upload-artifact@v4
+        with:
+          name: 64tass-snes-macos-x86_64
+          path: macos-x86_64/bin/*
+      - name: Upload macOS ARM64
+        uses: actions/upload-artifact@v4
+        with:
+          name: 64tass-snes-macos-aarch64
+          path: macos-aarch64/bin/*
+
+      - name: Upload Windows x86_64
+        uses: actions/upload-artifact@v4
+        with:
+          name: 64tass-snes-windows-x86_64
+          path: windows-x86_64/bin/*
+      - name: Upload Windows ARM64
+        uses: actions/upload-artifact@v4
+        with:
+          name: 64tass-snes-windows-aarch64
+          path: windows-aarch64/bin/*
+
+
