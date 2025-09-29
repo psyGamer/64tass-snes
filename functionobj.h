@@ -28,12 +28,12 @@ typedef enum Function_types {
     F_COSH, F_SINH, F_TANH, F_HYPOT, F_ATAN2, F_POW, F_SIGN, F_ABS, F_ALL,
     F_ANY, F_SIZE, F_LEN, F_RANGE, F_REPR, F_FORMAT, F_RANDOM, F_SORT,
     F_BINARY, F_BYTE, F_CHAR, F_RTA, F_ADDR, F_SINT, F_WORD, F_LINT, F_LONG,
-    F_DINT, F_DWORD
+    F_DINT, F_DWORD, F_MEMSIZE, F_IDXSIZE, F_DPAGE, F_DATABANK
 } Function_types;
 
 typedef struct Function {
     Obj v;
-    const char name[7];
+    const char name[9];
     const uint8_t name_len;
     int name_hash;
     const Function_types func;

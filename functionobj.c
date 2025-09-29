@@ -811,6 +811,14 @@ static MUST_CHECK Obj *calc2(oper_t op) {
             case O_FUNC:
                 func = v1->func;
                 switch (func) {
+                case F_MEMSIZE:
+                    return int_from_size(longaccu ? 16 : 8);
+                case F_IDXSIZE:
+                    return int_from_size(longindex ? 16 : 8);
+                case F_DPAGE:
+                    return int_from_size(dpage);
+                case F_DATABANK:
+                    return int_from_size(databank);
                 case F_HYPOT:
                     return gen_broadcast(op, function_hypot);
                 case F_ATAN2:
@@ -912,7 +920,7 @@ void functionobj_init(void) {
     type->calc2 = calc2;
 }
 
-static Function builtin_functions[] = { /* maximum name length of 6 chars */
+static Function builtin_functions[] = { /* maximum name length of 8 chars */
     { {NULL, 2}, "abs", 3, -1, F_ABS},
     { {NULL, 2}, "acos", 4, -1, F_ACOS},
     { {NULL, 2}, "addr", 4, -1, F_ADDR},
@@ -959,6 +967,10 @@ static Function builtin_functions[] = { /* maximum name length of 6 chars */
     { {NULL, 2}, "tanh", 4, -1, F_TANH},
     { {NULL, 2}, "trunc", 5, -1, F_TRUNC},
     { {NULL, 2}, "word",  4, -1, F_WORD},
+    { {NULL, 2}, "memsize", 7, -1, F_MEMSIZE},
+    { {NULL, 2}, "idxsize", 7, -1, F_IDXSIZE},
+    { {NULL, 2}, "dpage", 5, -1, F_DPAGE},
+    { {NULL, 2}, "databank", 8, -1, F_DATABANK},
 };
 
 void functionobj_names(void) {
