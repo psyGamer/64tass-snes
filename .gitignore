@@ -1,2 +1,4 @@
 *.o
 64tass
+.zig-cache
+zig-out

@@ -1,0 +1,7 @@
+.{
+    .name = .tass64_snes,
+    .version = "1.60.3243",
+    .minimum_zig_version = "0.15.1",
+    .paths = .{""},
+    .fingerprint = 0xf4f64d451b3df93e,
+}
