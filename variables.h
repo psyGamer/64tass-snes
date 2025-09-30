@@ -39,7 +39,8 @@ extern void get_namespaces(struct Mfunc *);
 extern size_t context_get_bottom(void);
 extern void context_set_bottom(size_t);
 
-#define MAX_ROM_SIZE       0x200000
+#define MAX_ROM_SIZE  0x200000
+#define MAX_WRAM_SIZE 0x20000
 
 typedef union {
     struct {
@@ -57,14 +58,13 @@ typedef union {
     } __attribute__((packed));
     uint8_t raw;
 } cdl_flags_t;
-struct rom_comment_t {
+struct comment_t {
     str_t text;
     bool single_line;
 };
 
 extern struct Namespace *current_context, *cheap_context, *root_namespace;
 extern size_t fwcount;
-extern struct rom_comment_t rom_comments[];
 extern cdl_flags_t cdl_data[];
 extern bool gap_data[];
 extern struct Label *find_label(const struct str_t *, struct Namespace **);

@@ -21,6 +21,7 @@
 #include "obj.h"
 #include "str.h"
 #include "stdbool.h"
+#include "variables.h"
 
 extern struct Type *const LABEL_OBJ;
 
@@ -41,6 +42,7 @@ typedef struct Label {
     uint8_t defpass;
     uint8_t strength;
     uint8_t fwpass;
+    struct comment_t comment;
     bool export_label;
 } Label;
 

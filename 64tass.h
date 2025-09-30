@@ -22,6 +22,8 @@
 #include "stdbool.h"
 #include "inttypes.h"
 #include "wait_e.h"
+#include "str.h"
+#include "namespaceobj.h"
 
 #define MAX_PASS 20
 
@@ -47,5 +49,6 @@ extern bool close_waitfor(Wait_types);
 extern struct Obj *compile(void);
 extern FAST_CALL uint8_t *pokealloc(address_t, linepos_t);
 extern int main2(int *, char **[]);
+struct Label *new_comment_label(struct str_t comment, struct Namespace *context, struct linepos_s *epoint);
 struct str_t join_comment(struct str_t old, const char *new_data, size_t new_len);
 #endif
