@@ -39,6 +39,7 @@
 #include "mfuncobj.h"
 #include "memblocksobj.h"
 #include "functionobj.h"
+#include "codeobj.h"
 
 bool in_macro;
 bool in_function;
@@ -165,10 +166,18 @@ bool mtranslate(void) {
             p2++;
             continue;
         case ';':
-            size_t comment_len = strlen(p2);
-            if (q == 0 && comment_len > 0) {
-                printf("COMMMAC2 %s || %s || %x\n", pline, p2, current_address->l_address);
+            str_t comment;
+            comment.data = pline + lpoint.pos;
+            comment.len = strlen((const char *)comment.data);
+
+            if (q == 0 && comment.len > 0 && nolisting == 0) {
+                // Label *label = new_comment_label(comment, current_context, &lpoint);
+                // printf("COMMENT MACRO: '%s' (%i) || %i '%s' %x %x , %i %i\n", label->comment.text.data, label->comment.text.len, in_macro, comment.data, label, Code(label->value)->addr, label->defpass, pass);
             }
+            // size_t comment_len = strlen(p2);
+            // if (q == 0 && comment_len > 0) {
+            //     printf("COMMMAC2 %s || %s || %x\n", pline, p2, current_address->l_address);
+            // }
             if (q == 0) q = 4;
             p2++;
             continue;

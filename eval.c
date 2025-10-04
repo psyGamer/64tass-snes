@@ -1982,8 +1982,9 @@ static bool get_exp2(int stop) {
             comment.data = pline + lpoint.pos;
             comment.len = strlen((const char *)comment.data);
 
-            if (comment.len > 0 && nolisting == 0 && current_section->name.data != NULL) {
+            if (comment.len > 0 && nolisting == 0 && current_section->name.data != NULL && pass != 1) {
                 Label *label = new_comment_label(comment, current_context, &epoint);
+                label->comment.single_line = true;
                 printf("COMMENT EVAL: '%s' (%i) || '%s' %x %x , %i %i\n", label->comment.text.data, label->comment.text.len, comment.data, label, Code(label->value)->addr, label->defpass, pass);
             }
             FALL_THROUGH; /* fall through */

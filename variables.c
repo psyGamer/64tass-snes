@@ -213,6 +213,11 @@ static Label *namespace_update(Namespace *ns, Label *p) {
             const str_t *s1 = &p->cfname;
             const str_t *s2 = &d->cfname;
             if (s1->len == s2->len && (s1->data == s2->data || memcmp(s1->data, s2->data, s1->len) == 0)) {
+                printf("Found label: ");
+                for (size_t n = 0; n < s1->len; n++) printf("$%02x ", s1->data[n]);
+                printf("  vs  ");
+                for (size_t n = 0; n < s2->len; n++) printf("$%02x ", s2->data[n]);
+                printf("\n");
                 return d;
             }
         }
@@ -875,6 +880,7 @@ const char *dupe_label(Label *label) {
     return data;
 }
 
+static bool only_comments = false;
 static void labelmesen(Namespace *names, FILE *flab) {
     size_t n, ln;
 
@@ -907,6 +913,7 @@ static void labelmesen(Namespace *names, FILE *flab) {
                     uint32_t rom_offset = code->addr - bank_start;
                     
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
+                        printf("ROM comment @ %x '%s'\n", rom_offset, l2->comment.text.data);
                         if (rom_comments[rom_offset].text.data != NULL) {
                             rom_comments[rom_offset].text = join_comment(rom_comments[rom_offset].text, l2->comment.text.data, l2->comment.text.len);
                         } else {
@@ -974,8 +981,8 @@ static void labelmesen(Namespace *names, FILE *flab) {
                     uint32_t rom_offset = long_addr - bank_start;
                     
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE && (rom_labels[rom_offset].data == NULL
-                                                                      || (rom_labels[rom_offset].depth < label_stack.p && rom_labels[rom_offset].size <= size)
-                                                                      || (rom_labels[rom_offset].depth == label_stack.p && size != 0 && rom_labels[rom_offset].size <= size))) {
+                                                                     || (rom_labels[rom_offset].depth < label_stack.p && rom_labels[rom_offset].size <= size)
+                                                                     || (rom_labels[rom_offset].depth >= label_stack.p && size != 0 && rom_labels[rom_offset].size <= size))) {
                         struct rom_label_t rom_label = { .data = dupe_label(l2), .size = size, .depth = label_stack.p };
                         rom_labels[rom_offset] = rom_label;
                         printf("Write %x\n", rom_offset);
@@ -994,7 +1001,7 @@ static void labelmesen(Namespace *names, FILE *flab) {
                 // putc('\n', flab);
             }
         }
-        if (!l2->owner) continue;
+        if (only_comments) continue;
 
         ns = get_namespace(l2->value);
 
@@ -1003,9 +1010,11 @@ static void labelmesen(Namespace *names, FILE *flab) {
                 if (l2->value->obj->type == T_STRUCT || l2->value->obj->type == T_UNION) {
                     // Skip
                 } else {
+                    if (!l2->owner) only_comments = true;
                     push_label(l2);
                     labelmesen(ns, flab);
                     pop_label();
+                    only_comments = false;
                 }
             }
         }
