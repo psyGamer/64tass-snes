@@ -1273,7 +1273,7 @@ retry:
                         else w = 2;
                     }
 
-                    if (is_amode(amode, ADR_ZP) && (uval3 <= 0xffff && dpage <= 0xffff && (uint16_t)(uval3 - dpage) <= 0xff) || (in_shared && (uint16_t)(addr - dpage) <= 0xff)) {
+                    if (is_amode(amode, ADR_ZP) && ((uval3 <= 0xffff && dpage <= 0xffff && (uint16_t)(uval3 - dpage) <= 0xff) || (in_shared && (uint16_t)(addr - dpage) <= 0xff))) {
                         if (diagnostics.immediate && opr == OPR_ZP && is_amode(amode, ADR_IMMEDIATE) && (val->obj != CODE_OBJ || Code(val)->memblocks->enumeration) && val->obj != ADDRESS_OBJ) err_msg2(ERROR_NONIMMEDCONST, NULL, epoint2);
                         else if (w != 3 && w != 0) err_msg_address_mismatch(opr-0, opr-w, epoint2);
                         adr = uval - dpage; w = 0;
@@ -1291,7 +1291,6 @@ retry:
                         adr = uval; w = 2;
                         if ((uval & all_mem) != uval) err_msg_addr_wrap(epoint2);
                     } else {
-                        printf("Err1 %x %x %x: %x %x || %x %x %x || %i\n", uval, uval2, uval3, bank, addr, databank, star >> 16, dpage, in_shared);
                         w = is_amode(amode, ADR_ADDR) ? 1 : 0;
                         err_msg2((w != 0) ? ERROR__NOT_DATABANK : ERROR____NOT_DIRECT, val2, epoint2);
                     }
@@ -1326,7 +1325,6 @@ retry:
                     if (!is_amode(amode, ADR_ADDR)) return err_addressize(ERROR__NO_WORD_ADDR, epoint2, prm);
                     uval &= all_mem;
                     adr = uval;
-                    printf("Err2\n");
                     if (databank != (uval >> 16)) err_msg2(ERROR__NOT_DATABANK, val2, epoint2);
                     else if ((uval & all_mem) != uval) err_msg_addr_wrap(epoint2);
                     break;
