@@ -2457,9 +2457,6 @@ static MUST_CHECK Label *new_anonlabel(Namespace *context) {
     anonsymbol.star_tree = star_tree;
     anonsymbol.vline = vline;
     tmpname.data = (const uint8_t *)&anonsymbol; tmpname.len = sizeof anonsymbol;
-    printf("Anon Hash: '%c' %x %i ==> ", anonsymbol.type, anonsymbol.star_tree, anonsymbol.vline);
-    for (size_t n = 0; n < tmpname.len; n++) printf("$%02x ", tmpname.data[n]);
-    printf("\n");
     return new_label(&tmpname, context, strength, current_file_list);
 }
 
@@ -2512,11 +2509,8 @@ Label *new_comment_label(str_t comment, Namespace *context, struct linepos_s *ep
     Label *label = get_comment_label(star, context, epoint);
     bool write_text = false;
     if (label == NULL) {
-        printf("Alloc ");
         label = new_anonlabel(context);
         comment_labels[comment_labels_len++] = label;
-        // if (star == 0x809e9b || star == 0x809d3e)
-            printf("HASH @ %x: %i || %x %i ==> %x %x\n", star, label->hash, star_tree, vline, label, label->value);
 
         label->constant = true;
         label->owner = true;
@@ -2535,7 +2529,6 @@ Label *new_comment_label(str_t comment, Namespace *context, struct linepos_s *ep
             label->value = get_star();
         }
     } else {
-        printf("Reuse ");
         label->usepass = pass;
         if (label->value->obj == CODE_OBJ) {
             Code *code = Code(label->value);
@@ -2549,7 +2542,6 @@ Label *new_comment_label(str_t comment, Namespace *context, struct linepos_s *ep
     }
 
     if (write_text) {
-        printf(" %i/%i/%i: \n", label->defpass, label->usepass, pass);
         if (comment.len >= 3 && comment.data[1] == ';' && comment.data[2] == ';') {
             // Overwrite non-doc comments
             if (label->comment.text.data != NULL && label->comment.text.len >= 2 && label->comment.text.data[0] == ';' && label->comment.text.data[1] == ';') {
@@ -2560,7 +2552,6 @@ Label *new_comment_label(str_t comment, Namespace *context, struct linepos_s *ep
                 label->comment.text.len  = comment.len - 1;
                 label->comment.single_line = false;
             }
-            printf(" - Write Doc '%s' into '%s' @ %x %x\n", comment.data, label->comment.text.data, star, label);
         } else {
             // Mark existing as non-doc comment
             if (label->comment.text.data != NULL && label->comment.text.len >= 1 && label->comment.text.data[0] == ';') {
@@ -2578,12 +2569,10 @@ Label *new_comment_label(str_t comment, Namespace *context, struct linepos_s *ep
 
                 label->comment.text.data += (existing_depth - new_depth);
                 label->comment.text.len  -= (existing_depth - new_depth);
-                printf(" - Write Doc Clear %i,%i '%s' into '%s' @ %x %x\n", existing_depth, new_depth, comment.data, label->comment.text.data, star, label);
             }
             
             label->comment.text = join_comment(label->comment.text, (const char *)comment.data + 1, comment.len - 1);
             label->comment.single_line = false;
-            printf(" - Write Comm '%s' into '%s' @ %x %x\n", comment.data, label->comment.text.data, star, label);
         }
     }
 
@@ -4001,10 +3990,8 @@ MUST_CHECK Obj *compile(void)
                     }
                 }
                 
-                // if (!in_macro) {
                 if (pass != 1) {
-                    Label *label = new_comment_label(comment, mycontext, &epoint);
-                    printf("COMMENT LABEL: '%s' (%i) || %i '%s' %x %x , %i %i\n", label->comment.text.data, label->comment.text.len, in_macro, comment.data, label, Code(label->value)->addr, label->defpass, pass);
+                    new_comment_label(comment, mycontext, &epoint);
                 }
             }
             
@@ -4506,7 +4493,6 @@ MUST_CHECK Obj *compile(void)
                     if (label != NULL && label->defpass == pass) {
                         if (label->comment.text.len >= 2 && label->comment.text.data[0] == ';' && label->comment.text.data[1] == ';') {
                             label->comment.text = join_comment_rev(";;    Documentation:", sizeof ";;    Documentation:" - 1, label->comment.text);
-                            printf("DOC COMMENT: '%s' %x %i || %x\n", label->comment.text.data, Code(label->value)->addr, pass, label);
                         }
                     }
 
@@ -4759,7 +4745,6 @@ MUST_CHECK Obj *compile(void)
                     if (label != NULL && pass == 1 && nolisting == 0 && current_section->name.data != NULL) {
                         if (label->comment.text.len >= 2 && label->comment.text.data[0] == ';' && label->comment.text.data[1] == ';') {
                             label->comment.text = join_comment_rev(";;    Documentation:", sizeof ";;    Documentation:" - 1, label->comment.text);
-                            printf("DOC COMMENT: '%s' %x %i\n", label->comment.text.data, Code(label->value)->addr, pass);
                         }
                     }
                 
@@ -5034,10 +5019,8 @@ MUST_CHECK Obj *compile(void)
                                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
                                         gap_data[rom_offset] = true;
                                     }
-                                    printf("GAP %x %x %x\n", bank_start, rom_offset, p);
                                 }
                             }
-                            // printf("ALGIN: %x -> %x %i\n", oldstar, s->addr, pass);
                             vs2 = get_val();
                             offset = (vs2 == NULL) ? 0 : memalign_offset(get_val(), uval);
                             db = rmemalign(offset, uval, itt2);
@@ -5151,7 +5134,6 @@ MUST_CHECK Obj *compile(void)
                     if (label != NULL && label->defpass == 1) {
                         if (label->comment.text.len >= 2 && label->comment.text.data[0] == ';' && label->comment.text.data[1] == ';') {
                             label->comment.text = join_comment_rev(";;    Documentation:", sizeof ";;    Documentation:" - 1, label->comment.text);
-                            printf("DOC COMMENT: '%s' %x %i || %x\n", label->comment.text.data, Code(label->value)->addr, pass, label);
                         }
                     }
                     
@@ -5937,9 +5919,7 @@ MUST_CHECK Obj *compile(void)
                         if (comment.len > 0 && nolisting == 0 && current_section->name.data != NULL && pass != -1) {
                             Label *label = new_comment_label(comment, mycontext, &epoint);
                             label->comment.single_line = true;
-                            printf("COMMENT AFTER: '%s' (%i) || '%s' %x %x , %i %i\n", label->comment.text.data, label->comment.text.len, comment.data, label, Code(label->value)->addr, label->defpass, pass);
                         }
-                        // printf("Flush instr '%s' @ %x || %i %i\n", opname.data, current_address->address, longaccu, longindex);
                         cdl_data[current_address->address].memory_mode_8 = !longaccu;
                         cdl_data[current_address->address].index_mode_8 = !longindex;
                         err = instruction(prm, w, NULL, 0, &epoint);
@@ -5972,7 +5952,6 @@ MUST_CHECK Obj *compile(void)
                         get_vals_funcargs(&tmp);
                         address_t prev = current_address->address;
                         err = instruction(prm, w, tmp.val, tmp.len, &epoint);
-                        // printf("Flush instr '%s' @ %x-%x || %i %i %i\n", opname.data, prev, current_address->address, longaccu, longindex);
                         for (address_t addr = prev; addr < current_address->address; addr++) {
                             cdl_data[addr].memory_mode_8 = !longaccu;
                             cdl_data[addr].index_mode_8 = !longindex;

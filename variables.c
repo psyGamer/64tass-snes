@@ -213,11 +213,6 @@ static Label *namespace_update(Namespace *ns, Label *p) {
             const str_t *s1 = &p->cfname;
             const str_t *s2 = &d->cfname;
             if (s1->len == s2->len && (s1->data == s2->data || memcmp(s1->data, s2->data, s1->len) == 0)) {
-                printf("Found label: ");
-                for (size_t n = 0; n < s1->len; n++) printf("$%02x ", s1->data[n]);
-                printf("  vs  ");
-                for (size_t n = 0; n < s2->len; n++) printf("$%02x ", s2->data[n]);
-                printf("\n");
                 return d;
             }
         }
@@ -765,9 +760,6 @@ static void labelmesen_init() {
     }
 }
 static void labelmesen_flush(FILE *flab) {
-    // const char *last_l = NULL;
-    // address_t last_addr = 0;
-
     for (uint32_t n = 0; n < MAX_WRAM_SIZE; n++) {
         if (wram_labels[n].data == NULL) continue;
 
@@ -913,7 +905,6 @@ static void labelmesen(Namespace *names, FILE *flab) {
                     uint32_t rom_offset = code->addr - bank_start;
                     
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
-                        printf("ROM comment @ %x '%s'\n", rom_offset, l2->comment.text.data);
                         if (rom_comments[rom_offset].text.data != NULL) {
                             rom_comments[rom_offset].text = join_comment(rom_comments[rom_offset].text, l2->comment.text.data, l2->comment.text.len);
                         } else {
@@ -943,7 +934,6 @@ static void labelmesen(Namespace *names, FILE *flab) {
                         size = 0; // Avoid bumping 0-sized objects to 1
                     }
                     is_const = false;
-                    printf("Code: %i: ", code->dtype);
                 } else if (val->obj == BITS_OBJ) {
                     const Bits *bits = Bits(val);
                     long_addr = bits->data[0];
@@ -953,9 +943,6 @@ static void labelmesen(Namespace *names, FILE *flab) {
 
                 uint8_t bank = long_addr >> 16;
                 uint16_t addr = long_addr & 0xFFFF;
-                fprintf(stdout, "Label @ %x %d %i:", long_addr, size, l2->export_label);
-                labelname_print(l2, stdout, MESEN_LABEL_SEP);
-                putc('\n', stdout);
 
                 // SNES LoROM specific
                 if (((bank >= 0x00 && bank <= 0x3F) || (bank >= 0x80 && bank <= 0xBF)) && (addr >= 0x2000 && addr <= 0x7FFF)) {
@@ -968,14 +955,6 @@ static void labelmesen(Namespace *names, FILE *flab) {
                         struct ram_label_t wram_label = { .data = dupe_label(l2), .size = size };
                         wram_labels[wram_offset] = wram_label;
                     }
-                    // if (size == 1) {
-                    //     fprintf(flab, "SnesWorkRam:%x:", wram_offset);
-                    // } else {
-                    //     fprintf(flab, "SnesWorkRam:%x-%x:", wram_offset, wram_offset+size-1);
-                    // }
-                    // labelname_print(l2, flab, MESEN_LABEL_SEP);
-                    // putc('\n', flab);
-                    // printf("WRAM: %x %d '%s' %i\n", long_addr, size, snes_wram_labels[long_addr], val->obj == CODE_OBJ);
                 } else if (addr >= 0x8000) {
                     uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
                     uint32_t rom_offset = long_addr - bank_start;
@@ -985,20 +964,8 @@ static void labelmesen(Namespace *names, FILE *flab) {
                                                                      || (rom_labels[rom_offset].depth >= label_stack.p && size != 0 && rom_labels[rom_offset].size <= size))) {
                         struct rom_label_t rom_label = { .data = dupe_label(l2), .size = size, .depth = label_stack.p };
                         rom_labels[rom_offset] = rom_label;
-                        printf("Write %x\n", rom_offset);
-
-                        // fprintf(flab, ":%s", rom_comments[rom_offset].data);
-                        // rom_comments[rom_offset].data = NULL;
                     }
-                } else {
-                    // fprintf(flab, "TODO1:%x:", long_addr);
-                    // labelname_print(l2, flab, MESEN_LABEL_SEP);
-                    // putc('\n', flab);
                 }
-            } else {
-                // fprintf(flab, "TODO2:%i,%i:", val->obj == BITS_OBJ, val->obj == ADDRESS_OBJ || val->obj == CODE_OBJ || ((val->obj == BITS_OBJ || val->obj == INT_OBJ)));
-                // labelname_print(l2, flab, MESEN_LABEL_SEP);
-                // putc('\n', flab);
             }
         }
         if (only_comments) continue;
@@ -1076,10 +1043,6 @@ static void labelcdl(Namespace *names) {
                     uint32_t bank_start = 0x808000 + (bank - 0x80) * 0x8000;
                     uint32_t rom_offset = long_addr - bank_start;
 
-                    // fprintf(stdout, "Data: %i %x %d: ", is_code, rom_offset, size);
-                    // labelname_print(l2, stdout, MESEN_LABEL_SEP);
-                    // putc('\n', stdout);
-
                     if (rom_offset >= 0 && rom_offset < MAX_ROM_SIZE) {
                         for (size_t el = 0; el < size; el++) {
                             cdl_data[rom_offset + el].code = is_code && !gap_data[rom_offset + el];
@@ -1092,15 +1055,7 @@ static void labelcdl(Namespace *names) {
                             cdl_data[rom_offset].sub_entry_point = true;
                         }
                     }
-                } else {
-                    // fprintf(flab, "TODO1:%x:", long_addr);
-                    // labelname_print(l2, flab, MESEN_LABEL_SEP);
-                    // putc('\n', flab);
                 }
-            } else {
-                // fprintf(flab, "TODO2:%i,%i:", val->obj == BITS_OBJ, val->obj == ADDRESS_OBJ || val->obj == CODE_OBJ || ((val->obj == BITS_OBJ || val->obj == INT_OBJ)));
-                // labelname_print(l2, flab, MESEN_LABEL_SEP);
-                // putc('\n', flab);
             }
         }
         if (!l2->owner) continue;

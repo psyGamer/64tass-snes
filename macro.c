@@ -777,11 +777,6 @@ void get_macro_params(Obj *v) {
         } else {param->init.len = 0; param->init.data = NULL;}
         ignore();
         if (here() == 0 || here() == ';') {
-            const uint8_t *comment = pline + lpoint.pos;
-            size_t comment_len = strlen(comment);
-            if (comment_len > 0) {
-                printf("COMMMAC %s || %s\n", pline, comment);
-            }
             break;
         }
         if (here() != ',') {

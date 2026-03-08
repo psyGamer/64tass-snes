@@ -1407,7 +1407,6 @@ static bool get_exp2(int stop) {
     ignore();
     ch = here();
     if (ch == 0 || ch == ';') {
-        // printf("COMMENT: '%s'", pline + lpoint.pos);
         eval->out.end = eval->out.data;
         eval->out.p = eval->out.data;
         return true;
@@ -1572,11 +1571,6 @@ static bool get_exp2(int stop) {
             goto push_other;
         case 0:
         case ';':
-            const uint8_t *comment = pline + lpoint.pos;
-            size_t comment_len = strlen(comment);
-            if (comment_len > 0) {
-                printf("COMMBR %s || %s\n", pline, comment);
-            }
             goto tryanon;
         default:
             llen = (linecpos_t)get_label(pline + lpoint.pos);
@@ -1985,7 +1979,6 @@ static bool get_exp2(int stop) {
             if (comment.len > 0 && nolisting == 0 && current_section->name.data != NULL && pass != 1) {
                 Label *label = new_comment_label(comment, current_context, &epoint);
                 label->comment.single_line = true;
-                printf("COMMENT EVAL: '%s' (%i) || '%s' %x %x , %i %i\n", label->comment.text.data, label->comment.text.len, comment.data, label, Code(label->value)->addr, label->defpass, pass);
             }
             FALL_THROUGH; /* fall through */
         case 0:
